@@ -26,6 +26,7 @@ NAME_COL = 13        # Column with team owner name
 def get_client(credentials_file="credentials.json"):
     # Support base64-encoded credentials via env var (for cloud deployment)
     creds_b64 = os.environ.get("GOOGLE_CREDENTIALS_B64")
+    print(f"GOOGLE_CREDENTIALS_B64 present: {bool(creds_b64)}, length: {len(creds_b64) if creds_b64 else 0}")
     if creds_b64:
         creds_json = json.loads(base64.b64decode(creds_b64))
         creds = Credentials.from_service_account_info(creds_json, scopes=SCOPES)
