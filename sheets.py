@@ -25,13 +25,24 @@ NAME_COL = 13        # Column with team owner name
 
 def get_client(credentials_file="credentials.json"):
     # Support base64-encoded credentials via env var (for cloud deployment)
-    creds_b64 = os.environ.get("GOOGLE_CREDENTIALS_B64")
-    print(f"GOOGLE_CREDENTIALS_B64 present: {bool(creds_b64)}, length: {len(creds_b64) if creds_b64 else 0}")
+    creds_b64 = os.environ.get("GOOGLE_CREDENTIALS_B64", "")
     if creds_b64:
         creds_json = json.loads(base64.b64decode(creds_b64))
         creds = Credentials.from_service_account_info(creds_json, scopes=SCOPES)
-    else:
+    elif os.path.exists(credentials_file):
         creds = Credentials.from_service_account_file(credentials_file, scopes=SCOPES)
+    else:
+        # Try GOOGLE_CREDENTIALS as raw JSON
+        creds_raw = os.environ.get("GOOGLE_CREDENTIALS", "")
+        if creds_raw:
+            creds_json = json.loads(creds_raw)
+            creds = Credentials.from_service_account_info(creds_json, scopes=SCOPES)
+        else:
+            raise RuntimeError(
+                "No credentials found. Set GOOGLE_CREDENTIALS_B64, "
+                "GOOGLE_CREDENTIALS, or provide credentials.json file. "
+                f"Env vars present: {[k for k in os.environ if 'GOOGLE' in k or 'CRED' in k]}"
+            )
     return gspread.authorize(creds)
 
 
