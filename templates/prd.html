@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raymond Golf Pool — PRD</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+        h1 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
+        h2 { color: #58a6ff; margin-top: 32px; border-bottom: 1px solid #30363d; padding-bottom: 6px; }
+        h3 { color: #79c0ff; }
+        h4 { color: #79c0ff; }
+        strong { color: #e6edf3; }
+        code {
+            background: #161b22;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        pre {
+            background: #161b22;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code { padding: 0; }
+        ul { padding-left: 24px; }
+        li { margin: 4px 0; }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 16px 0;
+        }
+        th, td {
+            border: 1px solid #30363d;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th { background: #161b22; }
+        .mermaid {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+        .diagram-label {
+            color: #8b949e;
+            font-size: 0.85rem;
+            font-style: italic;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Raymond Golf Pool — Product Requirements Document</h1>
+
+<h2>Overview</h2>
+<p>A web dashboard for a fantasy golf pool that combines team picks from a Google Sheet with live PGA Tour leaderboard data. Scoring is based on the sum of finishing positions (lowest total wins).</p>
+
+<h2>Problem</h2>
+<p>Managing a fantasy golf pool via spreadsheet alone requires manual updates and doesn't provide real-time visibility into how teams are performing during an active tournament. Participants have to wait for the sheet to be manually updated to see standings.</p>
+
+<h2>Solution</h2>
+<p>A lightweight web app that automatically pulls team/pick data from the existing Google Sheet and enriches it with live leaderboard data from ESPN, displaying a real-time standings dashboard.</p>
+
+<h2>Users</h2>
+<ul>
+    <li><strong>Pool participants</strong> (~37 teams) — view standings and track their picks during tournaments</li>
+    <li><strong>Pool administrator</strong> — maintains the Google Sheet with picks and final results</li>
+</ul>
+
+<h2>Core Features</h2>
+<h3>1. Standings Table</h3>
+<ul>
+    <li>Ranked list of all teams sorted by total points (lowest first)</li>
+    <li>Columns: Rank, Team Name, Total Points, Current Pick, Live Position, Live Score, Thru</li>
+    <li>Click a team name to expand and see full pick history across all tournaments</li>
+</ul>
+<h3>2. Google Sheet Integration</h3>
+<ul>
+    <li>Reads from the "2026 Standings" worksheet</li>
+    <li>Parses tournament blocks dynamically (GOLFER / CP / TP column groups)</li>
+    <li>Team names pulled from the NAME column (col 13)</li>
+    <li>No write access needed — read-only via service account</li>
+</ul>
+<h3>3. Live Leaderboard</h3>
+<ul>
+    <li>Fetches current PGA Tour tournament data from ESPN's public API</li>
+    <li>Shows live position, score relative to par, and holes completed</li>
+    <li>Matches golfer names from the sheet to ESPN player names (case-insensitive, full name)</li>
+    <li>Incorporates live positions into running point totals for the current week</li>
+</ul>
+<h3>4. Auto-Refresh</h3>
+<ul>
+    <li>Dashboard refreshes data every 5 minutes via background fetch</li>
+    <li>No manual reload required during tournament play</li>
+    <li>Timestamp shown for last update</li>
+</ul>
+
+<h2>Data Flow</h2>
+<p class="diagram-label">How data moves through the system:</p>
+<div class="mermaid">
+graph LR
+    A["Google Sheet\n(2026 Standings)"] -->|"gspread\nservice account"| B["Flask Backend\n(app.py)"]
+    C["ESPN Golf API\n(scoreboard)"] -->|"requests\nHTTP GET"| B
+    B -->|"JSON\n/api/standings"| D["Web Dashboard\n(index.html)"]
+    D -->|"Auto-refresh\nevery 5 min"| B
+</div>
+
+<h2>Architecture</h2>
+<p class="diagram-label">Component relationships:</p>
+<div class="mermaid">
+graph TD
+    subgraph "Flask Backend (app.py)"
+        R1["GET /\nRender dashboard"]
+        R2["GET /api/standings\nReturn combined JSON"]
+    end
+
+    subgraph "Data Sources"
+        S["sheets.py\nGoogle Sheets reader"]
+        L["leaderboard.py\nESPN API fetcher"]
+    end
+
+    subgraph "Frontend"
+        H["index.html\nStandings table + auto-refresh"]
+        CSS["style.css\nDark theme, mobile-responsive"]
+    end
+
+    subgraph "External"
+        GS[("Google Sheet\n2026 Standings")]
+        ESPN[("ESPN PGA Tour\nScoreboard API")]
+    end
+
+    R2 --> S
+    R2 --> L
+    S --> GS
+    L --> ESPN
+    R1 --> H
+    H --> CSS
+    H -->|"fetch /api/standings"| R2
+</div>
+
+<h2>Request Sequence</h2>
+<p class="diagram-label">What happens on each page load / refresh cycle:</p>
+<div class="mermaid">
+sequenceDiagram
+    participant Browser
+    participant Flask
+    participant Sheets as Google Sheets
+    participant ESPN as ESPN API
+
+    Browser->>Flask: GET /
+    Flask-->>Browser: index.html
+
+    loop Every 5 minutes
+        Browser->>Flask: GET /api/standings
+        Flask->>Sheets: Read picks & scores
+        Sheets-->>Flask: Team data (37 teams)
+        Flask->>ESPN: GET /scoreboard
+        ESPN-->>Flask: Live leaderboard (72 players)
+        Flask->>Flask: Merge picks with live data
+        Flask-->>Browser: JSON standings
+        Browser->>Browser: Render table
+    end
+</div>
+
+<h2>File Structure</h2>
+<pre><code>~/raymond-golf-app/
+├── app.py              # Flask routes — GET / and GET /api/standings
+├── sheets.py           # Google Sheets reader (gspread + service account)
+├── leaderboard.py      # ESPN PGA Tour API fetcher + parser
+├── templates/
+│   └── index.html      # Dashboard UI with JS auto-refresh
+├── static/
+│   └── style.css       # Dark theme, mobile-responsive
+├── credentials.json    # Google service account key (gitignored)
+├── requirements.txt    # Python dependencies
+└── .gitignore</code></pre>
+
+<h3>Component Details</h3>
+
+<h4>sheets.py</h4>
+<ul>
+    <li>Authenticates via Google service account (credentials.json)</li>
+    <li>Opens spreadsheet by ID, reads "2026 Standings" worksheet</li>
+    <li>Dynamically finds tournament columns by scanning for "GOLFER" in header row</li>
+    <li>Returns: <code>[{team, picks: [{week, tournament, golfer, finish}], total_points}]</code></li>
+</ul>
+
+<h4>leaderboard.py</h4>
+<ul>
+    <li>Hits ESPN endpoint: <code>site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard</code></li>
+    <li>Parses competitor list: name, order (position), score, linescores</li>
+    <li>Returns: <code>{golfer_name_lower: {name, position, score, today, thru, status, event}}</code></li>
+</ul>
+
+<h4>app.py</h4>
+<ul>
+    <li><code>GET /</code> — Renders dashboard template with current tournament name</li>
+    <li><code>GET /api/standings</code> — Combines sheet data with live leaderboard:
+        <ul>
+            <li>Enriches picks with live_position, live_score, live_today, live_thru</li>
+            <li>Recalculates totals using live positions for unfinished tournaments</li>
+            <li>Returns sorted JSON</li>
+        </ul>
+    </li>
+</ul>
+
+<h4>index.html</h4>
+<ul>
+    <li>Fetches <code>/api/standings</code> on load and every 5 minutes</li>
+    <li>Renders standings table with conditional styling (under/over par colors)</li>
+    <li>Expandable rows show full pick history per team</li>
+    <li>Mobile-responsive layout</li>
+</ul>
+
+<h2>Google Sheet Format</h2>
+<pre><code>Row 3:  Tournament names (SONY OPEN, AMERICAN EX, FARMERS, ...)
+Row 4:  Column headers (GOLFER, CP, TP repeated per tournament; NAME at col 13)
+Row 6+: Data rows
+
+Columns per tournament block:
+  GOLFER — Golfer last name (e.g., "MATSUYAMA")
+  CP     — Current/final position (e.g., 2)
+  TP     — Cumulative total points through that tournament
+
+Col 0:  Team number
+Col 13: Team owner name (e.g., "STEVE SARTORIUS")</code></pre>
+
+<h2>Scoring</h2>
+<ul>
+    <li>Each week, a team picks one golfer</li>
+    <li>Points = golfer's finishing position (1st place = 1 point, 2nd = 2, etc.)</li>
+    <li>Season total = sum of all weekly finishing positions</li>
+    <li><strong>Lowest total wins</strong></li>
+</ul>
+
+<h2>Tech Stack</h2>
+<ul>
+    <li><strong>Backend</strong>: Python 3 + Flask</li>
+    <li><strong>Google Sheets</strong>: gspread + google-auth (service account)</li>
+    <li><strong>Leaderboard</strong>: ESPN public API (no auth required)</li>
+    <li><strong>Frontend</strong>: Vanilla HTML/CSS/JS (no framework)</li>
+    <li><strong>Deployment</strong>: Local (localhost:5001)</li>
+</ul>
+
+<h2>Configuration</h2>
+<table>
+    <tr><th>Environment Variable</th><th>Purpose</th></tr>
+    <tr><td><code>GOLF_SHEET_ID</code></td><td>Google Sheets spreadsheet ID</td></tr>
+    <tr><td><code>GOLF_CREDENTIALS</code></td><td>Path to service account JSON (default: credentials.json)</td></tr>
+</table>
+
+<h2>Limitations &amp; Known Issues</h2>
+<ul>
+    <li>Golfer name matching requires full name match (e.g., "MATSUYAMA" won't match "Hideki Matsuyama" on ESPN) — last-name matching can be added later</li>
+    <li>No caching — each page load/refresh hits both Google Sheets API and ESPN API</li>
+    <li>No authentication on the dashboard — anyone with the URL can view it</li>
+    <li>ESPN API is undocumented and could change without notice</li>
+</ul>
+
+<h2>Future Enhancements</h2>
+<ul>
+    <li>Last-name fuzzy matching for golfer names</li>
+    <li>Response caching to reduce API calls</li>
+    <li>Historical season-over-season comparison</li>
+    <li>Push notifications for position changes</li>
+    <li>Deploy to cloud hosting for shared access</li>
+</ul>
+
+<script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+</script>
+</body>
+</html>

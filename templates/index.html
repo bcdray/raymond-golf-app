@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raymond Golf Pool</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Raymond Golf Pool</h1>
+            <div class="tournament" id="tournament">{{ tournament }}</div>
+            <div class="updated" id="updated"></div>
+        </header>
+
+        <div id="content">
+            <p class="status-msg">Loading standings...</p>
+        </div>
+    </div>
+
+    <script>
+        function formatTime(date) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function scoreClass(score) {
+            if (!score) return '';
+            if (score === 'E' || score === '0') return 'even-par';
+            if (score.startsWith('+')) return 'over-par';
+            return '';
+        }
+
+        function renderStandings(data) {
+            const { tournament, teams } = data;
+
+            if (tournament) {
+                document.getElementById('tournament').textContent = tournament;
+            }
+            document.getElementById('updated').textContent = 'Updated ' + formatTime(new Date());
+
+            if (!teams || teams.length === 0) {
+                document.getElementById('content').innerHTML =
+                    '<p class="status-msg">No data available.</p>';
+                return;
+            }
+
+            // Find the latest week (highest week number across all picks)
+            let maxWeek = 0;
+            teams.forEach(t => t.picks.forEach(p => { if (p.week > maxWeek) maxWeek = p.week; }));
+
+            let html = `
+                <table class="standings-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Team</th>
+                            <th>Pts</th>
+                            <th>MCs</th>
+                            <th>Current Pick</th>
+                            <th>Pos</th>
+                            <th>Score</th>
+                            <th class="hide-mobile">Thru</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            teams.forEach((team, i) => {
+                // Find the current (latest) week pick
+                const currentPick = team.picks.find(p => p.week === maxWeek) || {};
+                const hasLive = currentPick.live_position !== undefined;
+
+                html += `
+                    <tr>
+                        <td class="rank">${i + 1}</td>
+                        <td class="team-name picks-toggle" data-team="${i}">${team.team}</td>
+                        <td class="points">${team.total_points}</td>
+                        <td class="mc-count">${team.missed_cuts || 0}</td>
+                        <td class="current-pick">${currentPick.golfer || '—'}</td>
+                        <td class="live-pos">${hasLive ? currentPick.live_position : (currentPick.finish || '—')}</td>
+                        <td class="live-score ${hasLive ? scoreClass(currentPick.live_score) : ''}">${hasLive ? currentPick.live_score : '—'}</td>
+                        <td class="thru hide-mobile">${hasLive ? currentPick.live_thru : '—'}</td>
+                    </tr>
+                    <tr class="picks-detail" id="picks-${i}">
+                        <td colspan="8">
+                            <ul class="picks-list">
+                                ${team.picks.map(p =>
+                                    `<li>${p.tournament || 'Wk'+p.week}: ${p.golfer}<span class="finish">${p.finish !== null ? ' (' + p.finish + ')' : (p.live_position ? ' (' + p.live_position + ')' : '')}</span></li>`
+                                ).join('')}
+                            </ul>
+                        </td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('content').innerHTML = html;
+
+            // Toggle pick details
+            document.querySelectorAll('.picks-toggle').forEach(el => {
+                el.addEventListener('click', () => {
+                    const idx = el.dataset.team;
+                    const detail = document.getElementById('picks-' + idx);
+                    el.classList.toggle('open');
+                    detail.classList.toggle('open');
+                });
+            });
+        }
+
+        function loadStandings() {
+            fetch('/api/standings')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('content').innerHTML =
+                            `<p class="status-msg error">${data.error}</p>`;
+                        return;
+                    }
+                    renderStandings(data);
+                })
+                .catch(err => {
+                    document.getElementById('content').innerHTML =
+                        `<p class="status-msg error">Failed to load standings.</p>`;
+                    console.error(err);
+                });
+        }
+
+        // Initial load + auto-refresh every 60 seconds
+        loadStandings();
+        setInterval(loadStandings, 300000);
+    </script>
+</body>
+</html>

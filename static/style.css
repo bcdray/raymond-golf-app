@@ -1,0 +1,198 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px 16px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+header h1 {
+    font-size: 1.8rem;
+    color: #00d474;
+    margin-bottom: 4px;
+}
+
+header .tournament {
+    font-size: 1rem;
+    color: #aaa;
+}
+
+header .updated {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Standings table */
+.standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #16213e;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.standings-table thead {
+    background: #0f3460;
+}
+
+.standings-table th {
+    padding: 12px 10px;
+    text-align: left;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #aaa;
+}
+
+.standings-table td {
+    padding: 10px;
+    border-bottom: 1px solid #1a1a3e;
+    font-size: 0.95rem;
+}
+
+.standings-table tr:last-child td {
+    border-bottom: none;
+}
+
+.standings-table tbody tr:hover {
+    background: #1a2744;
+}
+
+.rank {
+    font-weight: 700;
+    color: #00d474;
+    width: 40px;
+    text-align: center;
+}
+
+.team-name {
+    font-weight: 600;
+}
+
+.points {
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+}
+
+.current-pick {
+    color: #ccc;
+}
+
+.live-score {
+    font-weight: 600;
+    color: #00d474;
+}
+
+.live-score.over-par {
+    color: #e74c3c;
+}
+
+.live-score.even-par {
+    color: #ccc;
+}
+
+.live-pos {
+    font-weight: 600;
+    text-align: center;
+}
+
+.thru {
+    color: #888;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.mc-count {
+    text-align: center;
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+/* Expandable picks */
+.picks-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+
+.picks-toggle::after {
+    content: " ▸";
+    font-size: 0.7rem;
+    color: #666;
+}
+
+.picks-toggle.open::after {
+    content: " ▾";
+}
+
+.picks-detail {
+    display: none;
+    padding: 8px 10px;
+    background: #111b30;
+}
+
+.picks-detail.open {
+    display: table-row;
+}
+
+.picks-detail td {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.picks-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.picks-list li {
+    background: #1a2744;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.picks-list .finish {
+    color: #00d474;
+    margin-left: 4px;
+}
+
+/* Loading / error */
+.status-msg {
+    text-align: center;
+    padding: 40px;
+    color: #888;
+    font-size: 1.1rem;
+}
+
+.error {
+    color: #e74c3c;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    header h1 { font-size: 1.4rem; }
+    .standings-table th,
+    .standings-table td { padding: 8px 6px; font-size: 0.85rem; }
+    .hide-mobile { display: none; }
+}
