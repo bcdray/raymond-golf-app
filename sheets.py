@@ -1,3 +1,7 @@
+import base64
+import json
+import os
+
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -20,7 +24,13 @@ NAME_COL = 13        # Column with team owner name
 
 
 def get_client(credentials_file="credentials.json"):
-    creds = Credentials.from_service_account_file(credentials_file, scopes=SCOPES)
+    # Support base64-encoded credentials via env var (for cloud deployment)
+    creds_b64 = os.environ.get("GOOGLE_CREDENTIALS_B64")
+    if creds_b64:
+        creds_json = json.loads(base64.b64decode(creds_b64))
+        creds = Credentials.from_service_account_info(creds_json, scopes=SCOPES)
+    else:
+        creds = Credentials.from_service_account_file(credentials_file, scopes=SCOPES)
     return gspread.authorize(creds)
 
 
