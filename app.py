@@ -1,9 +1,11 @@
+import logging
 import os
 from flask import Flask, jsonify, render_template
 from sheets import load_sheet_data
 from leaderboard import fetch_leaderboard, get_tournament_name
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 SPREADSHEET_ID = os.environ.get("GOLF_SHEET_ID", "")
 CREDENTIALS_FILE = os.environ.get("GOLF_CREDENTIALS", "credentials.json")
@@ -24,6 +26,7 @@ def api_standings():
     try:
         teams = load_sheet_data(SPREADSHEET_ID, CREDENTIALS_FILE)
     except Exception as e:
+        app.logger.error(f"Sheet error: {e}", exc_info=True)
         return jsonify({"error": f"Sheet error: {e}"}), 500
 
     leaderboard = fetch_leaderboard()
