@@ -40,6 +40,26 @@ def api_standings():
         if last:
             lastname_lookup[last] = full_name
 
+    # Find the current (latest) week
+    max_week = 0
+    for team in teams:
+        for pick in team["picks"]:
+            if pick["week"] > max_week:
+                max_week = pick["week"]
+
+    # If a team has no pick for the current week, treat as missed cut (70th place)
+    MC_PENALTY = 70
+    for team in teams:
+        has_current_week = any(p["week"] == max_week for p in team["picks"])
+        if not has_current_week and max_week > 0:
+            team["picks"].append({
+                "week": max_week,
+                "tournament": tournament or "Current",
+                "golfer": "NO PICK",
+                "finish": None,
+                "no_pick": True,
+            })
+
     # Enrich current week picks with live data
     for team in teams:
         for pick in team["picks"]:
@@ -58,11 +78,15 @@ def api_standings():
                 tournament = live.get("event", tournament)
 
     # Recalculate points: for the latest week with no finish recorded,
-    # use live position if available
+    # use live position if available; no-pick = 70 penalty
     for team in teams:
         total = 0
         for pick in team["picks"]:
-            if pick["finish"] is not None:
+            if pick.get("no_pick"):
+                total += MC_PENALTY
+                pick["live_position"] = str(MC_PENALTY)
+                pick["live_score"] = "MC"
+            elif pick["finish"] is not None:
                 total += pick["finish"]
             elif "live_position" in pick:
                 # Try to parse live position as a number for running total
@@ -73,10 +97,12 @@ def api_standings():
                     pass
         team["total_points"] = total
 
-    # Calculate rank without live data (completed weeks only)
+    # Calculate rank without live data (completed weeks only, no-pick still penalized)
     base_totals = []
     for team in teams:
         base = sum(p["finish"] for p in team["picks"] if p["finish"] is not None)
+        if any(p.get("no_pick") for p in team["picks"]):
+            base += MC_PENALTY
         base_totals.append({"team": team["team"], "base_points": base})
     base_totals.sort(key=lambda t: t["base_points"])
     base_rank = {t["team"]: i + 1 for i, t in enumerate(base_totals)}
