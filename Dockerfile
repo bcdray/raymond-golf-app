@@ -7,4 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 COPY . .
 
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 2 app:app
+COPY start.sh .
+RUN chmod +x start.sh
+CMD ["./start.sh"]
