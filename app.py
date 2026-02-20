@@ -73,8 +73,22 @@ def api_standings():
                     pass
         team["total_points"] = total
 
-    # Re-sort after recalculation
+    # Calculate rank without live data (completed weeks only)
+    base_totals = []
+    for team in teams:
+        base = sum(p["finish"] for p in team["picks"] if p["finish"] is not None)
+        base_totals.append({"team": team["team"], "base_points": base})
+    base_totals.sort(key=lambda t: t["base_points"])
+    base_rank = {t["team"]: i + 1 for i, t in enumerate(base_totals)}
+
+    # Re-sort after recalculation (with live data)
     teams.sort(key=lambda t: t["total_points"])
+
+    # Add rank_change: positive = moving up, negative = moving down
+    for i, team in enumerate(teams):
+        current_rank = i + 1
+        previous_rank = base_rank.get(team["team"], current_rank)
+        team["rank_change"] = previous_rank - current_rank
 
     return jsonify({
         "tournament": tournament,

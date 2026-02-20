@@ -78,8 +78,21 @@ header .updated {
 .rank {
     font-weight: 700;
     color: #00d474;
-    width: 40px;
+    width: 60px;
     text-align: center;
+    white-space: nowrap;
+}
+
+.rank-up {
+    color: #00d474;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.rank-down {
+    color: #e74c3c;
+    font-size: 0.7rem;
+    font-weight: 700;
 }
 
 .team-name {

@@ -72,7 +72,11 @@
 
                 html += `
                     <tr>
-                        <td class="rank">${i + 1}</td>
+                        <td class="rank">${i + 1}${team.rank_change > 0
+                            ? `<span class="rank-up"> ▲${team.rank_change}</span>`
+                            : team.rank_change < 0
+                            ? `<span class="rank-down"> ▼${Math.abs(team.rank_change)}</span>`
+                            : ''}</td>
                         <td class="team-name picks-toggle" data-team="${i}">${team.team}</td>
                         <td class="points">${team.total_points}</td>
                         <td class="mc-count">${team.missed_cuts || 0}</td>
