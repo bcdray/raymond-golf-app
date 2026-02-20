@@ -210,8 +210,12 @@ header .updated {
 
 /* Mobile */
 @media (max-width: 600px) {
-    header h1 { font-size: 1.4rem; }
-    .standings-table th,
-    .standings-table td { padding: 8px 6px; font-size: 0.85rem; }
+    header h1 { font-size: 1.2rem; }
+    header .tournament { font-size: 0.85rem; }
+    .standings-table th { padding: 4px 3px; font-size: 0.65rem; }
+    .standings-table td { padding: 5px 3px; font-size: 0.72rem; }
+    .rank { width: auto; }
+    .rank-up, .rank-down, .rank-even { font-size: 0.6rem; }
+    .picks-list li { font-size: 0.65rem; padding: 3px 5px; }
     .hide-mobile { display: none; }
 }
