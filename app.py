@@ -97,12 +97,12 @@ def api_standings():
                     pass
         team["total_points"] = total
 
-    # Calculate rank without live data (completed weeks only, no-pick still penalized)
+    # Calculate rank based on completed weeks only (no current week data at all)
+    # This is the "entering the week" rank to compare against
     base_totals = []
     for team in teams:
-        base = sum(p["finish"] for p in team["picks"] if p["finish"] is not None)
-        if any(p.get("no_pick") for p in team["picks"]):
-            base += MC_PENALTY
+        base = sum(p["finish"] for p in team["picks"]
+                   if p["finish"] is not None and p["week"] != max_week)
         base_totals.append({"team": team["team"], "base_points": base})
     base_totals.sort(key=lambda t: t["base_points"])
     base_rank = {t["team"]: i + 1 for i, t in enumerate(base_totals)}
