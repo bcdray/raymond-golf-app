@@ -23,12 +23,12 @@ A lightweight web app that automatically pulls team/pick data from the existing 
 - Click a team name to expand and see full pick history across all tournaments with tournament names
 
 ### 2. Google Sheet Integration
-- Reads from the "2026 Standings" worksheet (gid=1963423056)
+- Reads from the "2026 Standings" worksheet
 - Parses tournament blocks dynamically by scanning for "GOLFER" in the header row
 - Team names pulled from the NAME column (col 13)
 - Missed cuts tracked via `*` suffix on team names in the sheet
 - No write access needed — read-only via Google service account
-- Spreadsheet ID: `1NVqaotczmg32TdkszCZCcZNdkvUgpL-uQGfDEX61kNM`
+- Spreadsheet ID: set via `GOLF_SHEET_ID` env var
 
 ### 3. Live Leaderboard
 - Fetches current PGA Tour tournament data from ESPN's public scoreboard API
@@ -141,7 +141,7 @@ Golfers not in the current tournament field simply won't have live data displaye
 │   └── prd.html        # PRD page with rendered Mermaid diagrams
 ├── static/
 │   └── style.css       # Dark theme, mobile-responsive styling
-├── credentials.json    # Google service account key (in private repo)
+├── credentials.json    # Google service account key (gitignored, NOT in repo)
 ├── Dockerfile          # Python 3.11 + gunicorn for Railway
 ├── .dockerignore       # Excludes venv, __pycache__, .git
 ├── requirements.txt    # flask, gspread, google-auth, requests
@@ -183,9 +183,9 @@ Golfers not in the current tournament field simply won't have live data displaye
 ## Google Sheet Format
 
 ```
-Sheet: "2026 Standings" (gid=1963423056)
+Sheet: "2026 Standings"
 
-Row 3:  Tournament names (SONY OPEN, AMERICAN EX, FARMERS, PHOENIX OPEN, PEBBLE, GENESIS, ...)
+Row 3:  Tournament names
 Row 4:  Column headers (GOLFER, CP, TP repeated per tournament; NAME at col 13)
 Row 5:  Empty separator row
 Row 6+: Data rows
@@ -195,9 +195,8 @@ Columns per tournament block:
   CP     — Current/final position (e.g., 2)
   TP     — Cumulative total points through that tournament
 
-Col 0:  Team number (1-37)
-Col 13: Team owner name (e.g., "STEVE SARTORIUS", "CHRIS HARLAN*")
-        * suffix indicates a missed cut
+Col 0:  Team number
+Col 13: Team owner name — * suffix indicates a missed cut
 ```
 
 ## Scoring
@@ -214,7 +213,7 @@ Col 13: Team owner name (e.g., "STEVE SARTORIUS", "CHRIS HARLAN*")
 - **Frontend**: Vanilla HTML/CSS/JS (no framework)
 - **Deployment**: Railway (Docker, auto-deploys from GitHub on push)
 - **Local dev**: `localhost:5001` with Flask debug mode
-- **Source control**: GitHub (private repo: `bcdray/raymond-golf-app`)
+- **Source control**: GitHub
 
 ## Deployment
 
@@ -222,14 +221,14 @@ Col 13: Team owner name (e.g., "STEVE SARTORIUS", "CHRIS HARLAN*")
 - **URL**: https://raymond-golf-app-production.up.railway.app
 - **Docker**: Python 3.11-slim + gunicorn, 1 worker, 2 threads
 - **Env vars on Railway**: `GOLF_SHEET_ID`, `PORT` (8080)
-- **Credentials**: `credentials.json` committed to private GitHub repo
+- **Credentials**: `credentials.json` provided via Docker build (not in repo)
 - **Auto-deploy**: Pushes to `main` trigger automatic redeploy
 
 ### Local Development
 ```bash
 cd ~/raymond-golf-app
 source venv/bin/activate
-GOLF_SHEET_ID="1NVqaotczmg32TdkszCZCcZNdkvUgpL-uQGfDEX61kNM" python app.py
+GOLF_SHEET_ID="<your-sheet-id>" python app.py
 # Open http://localhost:5001
 ```
 
@@ -237,16 +236,16 @@ GOLF_SHEET_ID="1NVqaotczmg32TdkszCZCcZNdkvUgpL-uQGfDEX61kNM" python app.py
 
 | Variable | Where | Value |
 |----------|-------|-------|
-| `GOLF_SHEET_ID` | Railway env var + local env | `1NVqaotczmg32TdkszCZCcZNdkvUgpL-uQGfDEX61kNM` |
+| `GOLF_SHEET_ID` | Railway env var + local env | Your Google Sheet ID |
 | `PORT` | Railway env var | `8080` |
 | `GOLF_CREDENTIALS` | Optional, local only | Path to credentials.json (default: `credentials.json`) |
 | `GOOGLE_CREDENTIALS_B64` | Optional, env var | Base64-encoded service account JSON |
 
 ## Google Cloud Setup
-- **Project**: raymond-golf-app (ID: 742376693255)
-- **Service account**: `golf-app-leaderboard@raymond-golf-app.iam.gserviceaccount.com`
+- **Project**: Set up a Google Cloud project with a service account
 - **APIs enabled**: Google Sheets API
 - **Sheet shared with**: service account email (Viewer access)
+- See `credentials.json` setup in deployment docs
 
 ## Known Limitations
 - No caching — each page load/refresh hits both Google Sheets API and ESPN API
