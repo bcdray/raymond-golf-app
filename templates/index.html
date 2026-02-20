@@ -61,7 +61,6 @@
                             <th>Current Pick</th>
                             <th>Pos</th>
                             <th>Score</th>
-                            <th class="hide-mobile">Thru</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -85,10 +84,9 @@
                         <td class="current-pick">${currentPick.golfer || '—'}</td>
                         <td class="live-pos">${hasLive ? currentPick.live_position : (currentPick.finish || '—')}</td>
                         <td class="live-score ${hasLive ? scoreClass(currentPick.live_score) : ''}">${hasLive ? currentPick.live_score : '—'}</td>
-                        <td class="thru hide-mobile">${hasLive ? currentPick.live_thru : '—'}</td>
                     </tr>
                     <tr class="picks-detail" id="picks-${i}">
-                        <td colspan="9">
+                        <td colspan="8">
                             <ul class="picks-list">
                                 ${team.picks.map(p =>
                                     `<li>${p.tournament || 'Wk'+p.week}: ${p.golfer}<span class="finish">${p.finish !== null ? ' (' + p.finish + ')' : (p.live_position ? ' (' + p.live_position + ')' : '')}</span></li>`
