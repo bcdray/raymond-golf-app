@@ -95,6 +95,12 @@ header .updated {
     font-weight: 700;
 }
 
+.rank-even {
+    color: #666;
+    font-size: 0.7rem;
+    text-align: center;
+}
+
 .team-name {
     font-weight: 600;
 }

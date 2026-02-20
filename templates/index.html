@@ -54,6 +54,7 @@
                     <thead>
                         <tr>
                             <th>Rank</th>
+                            <th>Chg</th>
                             <th>Team</th>
                             <th>Pts</th>
                             <th>MCs</th>
@@ -72,11 +73,12 @@
 
                 html += `
                     <tr>
-                        <td class="rank">${i + 1}${team.rank_change > 0
-                            ? `<span class="rank-up"> ▲${team.rank_change}</span>`
+                        <td class="rank">${i + 1}</td>
+                        <td class="${team.rank_change > 0 ? 'rank-up' : team.rank_change < 0 ? 'rank-down' : 'rank-even'}">${team.rank_change > 0
+                            ? `▲${team.rank_change}`
                             : team.rank_change < 0
-                            ? `<span class="rank-down"> ▼${Math.abs(team.rank_change)}</span>`
-                            : ''}</td>
+                            ? `▼${Math.abs(team.rank_change)}`
+                            : '—'}</td>
                         <td class="team-name picks-toggle" data-team="${i}">${team.team}</td>
                         <td class="points">${team.total_points}</td>
                         <td class="mc-count">${team.missed_cuts || 0}</td>
@@ -86,7 +88,7 @@
                         <td class="thru hide-mobile">${hasLive ? currentPick.live_thru : '—'}</td>
                     </tr>
                     <tr class="picks-detail" id="picks-${i}">
-                        <td colspan="8">
+                        <td colspan="9">
                             <ul class="picks-list">
                                 ${team.picks.map(p =>
                                     `<li>${p.tournament || 'Wk'+p.week}: ${p.golfer}<span class="finish">${p.finish !== null ? ' (' + p.finish + ')' : (p.live_position ? ' (' + p.live_position + ')' : '')}</span></li>`
