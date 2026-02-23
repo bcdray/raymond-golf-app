@@ -145,6 +145,7 @@ Golfers not in the current tournament field simply won't have live data displaye
 ├── Dockerfile          # Python 3.11 + gunicorn for Railway
 ├── .dockerignore       # Excludes venv, __pycache__, .git
 ├── requirements.txt    # flask, gspread, google-auth, requests
+├── ImportWeeklyData.gs # Google Apps Script for auto-importing weekly .xls from email
 ├── PRD.md              # This document
 └── .gitignore          # Excludes venv, __pycache__
 ```
@@ -247,6 +248,30 @@ GOLF_SHEET_ID="<your-sheet-id>" python app.py
 - **Sheet shared with**: service account email (Viewer access)
 - See `credentials.json` setup in deployment docs
 
+## Auto-Import from Email (Google Apps Script)
+
+The "2026 Standings" Google Sheet includes a bound Apps Script (`ImportWeeklyData.gs`) that automatically imports weekly data from the pool administrator's email.
+
+### How It Works
+1. Searches Gmail for unprocessed emails from `gtmagao@gmail.com` with `.xls` attachments
+2. Uploads the `.xls` to Google Drive via the Drive API v3, converting it to a Google Sheet
+3. Reads all data from the converted sheet and writes it into "2026 Standings" (row 3 onward)
+4. Labels the email `Golf-Processed` to prevent re-importing
+5. Deletes the temporary converted file
+
+### Usage
+- **Manual**: Open the Google Sheet → Golf Pool menu → Import Latest Email
+- **Automatic**: A weekly time-based trigger runs `importWeeklyData()` in the background
+
+### Technical Details
+- No advanced services required — uses `UrlFetchApp` to call the Drive API v3 directly
+- Detects interactive vs. trigger execution: shows `ui.alert()` dialogs when run from the menu, logs silently when run from a trigger
+- Gmail query: `from:gtmagao@gmail.com has:attachment -label:Golf-Processed`
+- Required permissions: Gmail (read + label), Drive (upload/delete), Sheets (read/write)
+
+### File
+- `ImportWeeklyData.gs` — stored in this repo for reference; the live copy lives inside the Google Sheet (Extensions → Apps Script)
+
 ## Known Limitations
 - No caching — each page load/refresh hits both Google Sheets API and ESPN API
 - No authentication on the dashboard — anyone with the URL can view it
@@ -259,3 +284,4 @@ GOLF_SHEET_ID="<your-sheet-id>" python app.py
 - Historical season-over-season comparison
 - Push notifications for position changes
 - Custom domain name
+- Email notification on successful/failed auto-import
