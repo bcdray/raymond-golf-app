@@ -20,7 +20,7 @@ SHEET_NAME = "2026 Standings"
 HEADER_ROW = 4       # 0-indexed row with GOLFER/CP/TP headers
 TOURNAMENT_ROW = 3   # 0-indexed row with tournament names
 DATA_START_ROW = 6   # 0-indexed first data row
-NAME_COL = 13        # Column with team owner name
+NAME_COL = 14        # Column O with team owner name
 
 
 def get_client(credentials_file="credentials.json"):
