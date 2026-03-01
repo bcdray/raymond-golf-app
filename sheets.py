@@ -20,7 +20,7 @@ SHEET_NAME = "2026 Standings"
 HEADER_ROW = 4       # 0-indexed row with GOLFER/CP/TP headers
 TOURNAMENT_ROW = 3   # 0-indexed row with tournament names
 DATA_START_ROW = 6   # 0-indexed first data row
-NAME_COL = 14        # Column O with team owner name
+NAME_COL_FALLBACK = 14  # Fallback if NAME header not found
 
 
 def get_client(credentials_file="credentials.json"):
@@ -66,6 +66,13 @@ def load_sheet_data(spreadsheet_id, credentials_file="credentials.json"):
     header_row = rows[HEADER_ROW]
     tourney_row = rows[TOURNAMENT_ROW]
 
+    # Find NAME column dynamically so it doesn't break when columns shift
+    name_col = NAME_COL_FALLBACK
+    for j, v in enumerate(header_row):
+        if v.strip().upper() == "NAME":
+            name_col = j
+            break
+
     # Find tournament blocks: columns where header says "GOLFER"
     golfer_cols = [j for j, v in enumerate(header_row) if v.strip() == "GOLFER"]
 
@@ -84,10 +91,10 @@ def load_sheet_data(spreadsheet_id, credentials_file="credentials.json"):
     teams = []
 
     for row in rows[DATA_START_ROW:]:
-        if not row or len(row) <= NAME_COL:
+        if not row or len(row) <= name_col:
             continue
 
-        raw_name = row[NAME_COL].strip() if NAME_COL < len(row) else ""
+        raw_name = row[name_col].strip() if name_col < len(row) else ""
         if not raw_name:
             continue
 
