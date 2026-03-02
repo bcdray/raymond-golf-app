@@ -100,7 +100,10 @@ def load_sheet_data(spreadsheet_id, credentials_file="credentials.json"):
 
         # Skip non-team rows (missed cuts header, prize money, etc.)
         raw_upper = raw_name.upper()
-        if any(skip in raw_upper for skip in ["MISSED CUT", "PRIZE", "1ST ", "2ND ", "3RD ", "4TH ", "5TH "]):
+        if "$" in raw_upper or any(skip in raw_upper for skip in [
+            "MISSED CUT", "PRIZE MONEY", "FEWEST POINTS", "LAST PERSON",
+            "MIDDLE OF THE ROAD",
+        ]):
             continue
 
         # A trailing * on the name indicates a missed cut
