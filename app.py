@@ -1,5 +1,6 @@
 import logging
 import os
+import unicodedata
 from flask import Flask, jsonify, render_template
 from sheets import load_sheet_data
 from leaderboard import fetch_leaderboard, get_tournament_name
@@ -32,13 +33,55 @@ def api_standings():
     leaderboard = fetch_leaderboard()
     tournament = ""
 
-    # Build a last-name lookup for matching sheet names (e.g. "MATSUYAMA")
-    # to ESPN full names (e.g. "Hideki Matsuyama")
+    def normalize(name):
+        """Strip accents and lowercase for fuzzy matching."""
+        n = unicodedata.normalize("NFD", name)
+        return "".join(c for c in n if unicodedata.category(c) != "Mn").lower()
+
+    # Build lookups for matching sheet names to ESPN full names
     lastname_lookup = {}
+    normalized_lookup = {}  # normalized full name -> original key
+    normalized_last_lookup = {}  # normalized last name -> original key
     for full_name, data in leaderboard.items():
-        last = full_name.split()[-1] if full_name else ""
+        parts = full_name.split()
+        last = parts[-1] if parts else ""
         if last:
             lastname_lookup[last] = full_name
+            normalized_last_lookup[normalize(last)] = full_name
+        normalized_lookup[normalize(full_name)] = full_name
+
+    def match_golfer(pick_name):
+        """Match a sheet golfer name to an ESPN leaderboard entry."""
+        key = pick_name.lower()
+        # Exact full-name match
+        if key in leaderboard:
+            return key
+        # Last-name match (e.g. "MATSUYAMA")
+        if key in lastname_lookup:
+            return lastname_lookup[key]
+        # Normalized match — strips accents (e.g. "hojgaard" matches "højgaard")
+        norm = normalize(pick_name)
+        if norm in normalized_lookup:
+            return normalized_lookup[norm]
+        if norm in normalized_last_lookup:
+            return normalized_last_lookup[norm]
+        # Initial + last name (e.g. "N hojgaard" or "J Smith")
+        pick_parts = pick_name.split()
+        if len(pick_parts) >= 2 and len(pick_parts[0]) <= 2:
+            initial = pick_parts[0].rstrip(".").lower()
+            pick_last = normalize(" ".join(pick_parts[1:]))
+            for full_name, orig_key in normalized_lookup.items():
+                espn_parts = full_name.split()
+                if len(espn_parts) >= 2:
+                    espn_initial = espn_parts[0][0]
+                    espn_last = " ".join(espn_parts[1:])
+                    if espn_initial == initial and espn_last == pick_last:
+                        return orig_key
+        # Partial last name match (e.g. "Neergaard" matches "Rasmus Neergaard-Petersen")
+        for full_name, orig_key in normalized_lookup.items():
+            if norm in full_name or full_name.endswith(norm):
+                return orig_key
+        return None
 
     # Find the current (latest) week
     max_week = 0
@@ -63,12 +106,8 @@ def api_standings():
     # Enrich current week picks with live data
     for team in teams:
         for pick in team["picks"]:
-            golfer_key = pick["golfer"].lower()
-            # Try exact full-name match first, then fall back to last-name match
-            matched_key = golfer_key
-            if golfer_key not in leaderboard and golfer_key in lastname_lookup:
-                matched_key = lastname_lookup[golfer_key]
-            if matched_key in leaderboard:
+            matched_key = match_golfer(pick["golfer"])
+            if matched_key and matched_key in leaderboard:
                 live = leaderboard[matched_key]
                 pick["live_position"] = live["position"]
                 pick["live_score"] = live["score"]
