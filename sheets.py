@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import os
 
 import gspread
@@ -74,7 +75,11 @@ def load_sheet_data(spreadsheet_id, credentials_file="credentials.json"):
             break
 
     # Find tournament blocks: columns where header says "GOLFER"
-    golfer_cols = [j for j, v in enumerate(header_row) if v.strip() == "GOLFER"]
+    golfer_cols = [j for j, v in enumerate(header_row) if v.strip().upper() == "GOLFER"]
+
+    logging.info("Header row (idx %d): %s", HEADER_ROW, header_row)
+    logging.info("Tourney row (idx %d): %s", TOURNAMENT_ROW, tourney_row)
+    logging.info("GOLFER columns found at: %s", golfer_cols)
 
     # Map each golfer column to its tournament name
     tournaments = []
@@ -87,6 +92,8 @@ def load_sheet_data(spreadsheet_id, credentials_file="credentials.json"):
                     name = tourney_row[k].strip()
                     break
         tournaments.append({"col": gc, "name": name or f"Week {len(tournaments) + 1}"})
+
+    logging.info("Tournaments found: %s", [(t['name'], t['col']) for t in tournaments])
 
     teams = []
 
