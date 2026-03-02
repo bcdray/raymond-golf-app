@@ -1,7 +1,39 @@
 import requests
+from datetime import datetime, timezone
 
 
 ESPN_GOLF_API = "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard"
+
+
+def _find_current_event(events):
+    """Find the current or most recent event from the events list."""
+    now = datetime.now(timezone.utc)
+    best = None
+    best_end = None
+
+    for event in events:
+        try:
+            end_str = event.get("endDate", event.get("date", ""))
+            end_dt = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            continue
+
+        # Pick the event whose end date is closest to now but not more than
+        # 2 days in the past (to catch just-finished tournaments),
+        # or the nearest upcoming event if nothing is current
+        if end_dt >= now:
+            # Event is ongoing or upcoming
+            if best is None or end_dt < best_end or (best_end and best_end < now):
+                best = event
+                best_end = end_dt
+        else:
+            # Event has ended — prefer if it ended recently and we have no current
+            days_ago = (now - end_dt).days
+            if days_ago <= 2 and (best is None or best_end < now and end_dt > best_end):
+                best = event
+                best_end = end_dt
+
+    return best or (events[0] if events else None)
 
 
 def fetch_leaderboard():
@@ -38,7 +70,9 @@ def _parse_espn_response(data):
     if not events:
         return leaderboard
 
-    event = events[0]
+    event = _find_current_event(events)
+    if not event:
+        return leaderboard
     event_name = event.get("name", "Unknown Tournament")
     competitions = event.get("competitions", [])
     if not competitions:
@@ -104,7 +138,9 @@ def get_tournament_name():
         data = resp.json()
         events = data.get("events", [])
         if events:
-            return events[0].get("name", "Unknown Tournament")
+            event = _find_current_event(events)
+            if event:
+                return event.get("name", "Unknown Tournament")
     except Exception:
         pass
     return "Unknown Tournament"
