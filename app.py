@@ -68,6 +68,19 @@ def api_standings():
         # Initial + last name (e.g. "N hojgaard" or "J Smith")
         pick_parts = pick_name.split()
         if len(pick_parts) >= 2 and len(pick_parts[0]) <= 2:
+            # Multi-initial match (e.g. "M W Lee" -> "Min Woo Lee", "S W Kim" -> "Si Woo Kim")
+            all_initials = all(len(p.rstrip(".")) == 1 for p in pick_parts[:-1])
+            if all_initials and len(pick_parts) >= 3:
+                initials = [p.rstrip(".").lower() for p in pick_parts[:-1]]
+                pick_last = normalize(pick_parts[-1])
+                for full_name, orig_key in normalized_lookup.items():
+                    espn_parts = full_name.split()
+                    if len(espn_parts) == len(pick_parts):
+                        espn_initials = [p[0] for p in espn_parts[:-1]]
+                        espn_last = normalize(espn_parts[-1])
+                        if initials == espn_initials and pick_last == espn_last:
+                            return orig_key
+            # Single initial + last name
             initial = pick_parts[0].rstrip(".").lower()
             pick_last = normalize(" ".join(pick_parts[1:]))
             for full_name, orig_key in normalized_lookup.items():
