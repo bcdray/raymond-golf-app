@@ -121,11 +121,14 @@ sequenceDiagram
 
 ## Name Matching Logic
 
-The sheet uses last names only (e.g., "MATSUYAMA", "S W KIM"), while ESPN uses full names (e.g., "Hideki Matsuyama", "Si Woo Kim"). The app builds a last-name lookup from the ESPN data:
+The sheet uses last names or abbreviated names (e.g., "MATSUYAMA", "M W LEE", "S W KIM"), while ESPN uses full names (e.g., "Hideki Matsuyama", "Min Woo Lee", "Si Woo Kim"). The app uses a multi-step fuzzy match:
 
-1. Try exact full-name match (case-insensitive)
-2. Fall back to last-name match — extract the last word from both the sheet pick and each ESPN name
-3. Multi-word sheet names like "S W KIM" or "K BRADLEY" match on the last word ("kim", "bradley")
+1. **Exact full-name match** (case-insensitive)
+2. **Last-name match** — e.g., "MATSUYAMA" matches "Hideki Matsuyama"
+3. **Normalized match** — strips accents, e.g., "HOJGAARD" matches "Nicolai Højgaard"
+4. **Multi-initial match** — e.g., "M W LEE" matches "Min Woo Lee" by comparing each initial against the first letter of each name part
+5. **Single initial + last name** — e.g., "N HOJGAARD" matches "Nicolai Højgaard"
+6. **Partial last name** — e.g., "NEERGAARD" matches "Rasmus Neergaard-Petersen"
 
 Golfers not in the current tournament field simply won't have live data displayed.
 
@@ -276,7 +279,7 @@ The "2026 Standings" Google Sheet includes a bound Apps Script (`ImportWeeklyDat
 - No caching — each page load/refresh hits both Google Sheets API and ESPN API
 - No authentication on the dashboard — anyone with the URL can view it
 - ESPN API is undocumented and could change without notice
-- Name matching is last-name only — could have ambiguity if two golfers share a last name (hasn't been an issue so far)
+- Name matching uses fuzzy logic (last name, initials, accent-stripped) — could have ambiguity if two golfers share a last name (hasn't been an issue so far)
 - Golfers not in the current tournament field won't show live data
 
 ## Future Enhancements
